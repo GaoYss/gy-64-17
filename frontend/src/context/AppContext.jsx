@@ -19,6 +19,22 @@ const apiMap = {
   inspections: inspectionApi,
 };
 
+function rebuildRecentUpdates(projects) {
+  return [...projects]
+    .sort((a, b) => {
+      const riskRank = (lvl) => (lvl === "high" ? 0 : 1);
+      const diff = riskRank(a.risk_level) - riskRank(b.risk_level);
+      return diff !== 0 ? diff : b.progress - a.progress;
+    })
+    .map((project) => ({
+      project_name: project.project_name,
+      phase: project.phase,
+      progress: project.progress,
+      latest_update: project.latest_update,
+      risk_level: project.risk_level,
+    }));
+}
+
 export function AppProvider({ children }) {
   const [state, setState] = useState({
     dashboard: null,
@@ -53,16 +69,37 @@ export function AppProvider({ children }) {
 
   async function createRecord(module, payload) {
     const created = await apiMap[module].create(payload);
-    setState((current) => ({ ...current, [module]: [...current[module], created] }));
+    setState((current) => {
+      const nextModuleList = [...current[module], created];
+      if (module !== "projects") {
+        return { ...current, [module]: nextModuleList };
+      }
+      return {
+        ...current,
+        projects: nextModuleList,
+        dashboard: current.dashboard
+          ? { ...current.dashboard, recent_updates: rebuildRecentUpdates(nextModuleList) }
+          : current.dashboard,
+      };
+    });
     return created;
   }
 
   async function updateRecord(module, id, payload) {
     const updated = await apiMap[module].update(id, payload);
-    setState((current) => ({
-      ...current,
-      [module]: current[module].map((item) => (item.id === id ? updated : item)),
-    }));
+    setState((current) => {
+      const nextModuleList = current[module].map((item) => (item.id === id ? updated : item));
+      if (module !== "projects") {
+        return { ...current, [module]: nextModuleList };
+      }
+      return {
+        ...current,
+        projects: nextModuleList,
+        dashboard: current.dashboard
+          ? { ...current.dashboard, recent_updates: rebuildRecentUpdates(nextModuleList) }
+          : current.dashboard,
+      };
+    });
     return updated;
   }
 

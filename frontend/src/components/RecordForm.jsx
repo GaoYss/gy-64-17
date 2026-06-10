@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 function initialValue(field) {
+  if (field.initial != null) return field.initial;
   if (field.type === "number") return 0;
   if (field.type === "select") return field.options[0];
   if (field.type === "date") return new Date().toISOString().slice(0, 10);
@@ -12,7 +13,11 @@ function initialValue(field) {
 function normalize(fields, values) {
   return fields.reduce((payload, field) => {
     const value = values[field.name];
-    payload[field.name] = field.type === "number" ? Number(value) : value;
+    if (field.type === "number") {
+      payload[field.name] = value === "" || value == null ? "" : Number(value);
+    } else {
+      payload[field.name] = value;
+    }
     return payload;
   }, {});
 }
@@ -68,7 +73,7 @@ export function RecordForm({ title, fields, onSubmit }) {
                   type={field.type}
                   value={values[field.name]}
                   onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
-                  required
+                  required={field.required}
                 />
               )}
             </label>
