@@ -241,8 +241,12 @@ class InMemoryStore:
                     "phase": project["phase"],
                     "progress": project["progress"],
                     "latest_update": project["latest_update"],
+                    "risk_level": project["risk_level"],
                 }
-                for project in sorted(self.projects, key=lambda item: item["progress"], reverse=True)
+                for project in sorted(
+                    self.projects,
+                    key=lambda item: (0 if item["risk_level"] == "high" else 1, -item["progress"]),
+                )
             ],
         }
 

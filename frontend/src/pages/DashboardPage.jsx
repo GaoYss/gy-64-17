@@ -1,4 +1,4 @@
-import { CalendarClock, CircleDollarSign, ClipboardList, TrendingUp } from "lucide-react";
+import { AlertTriangle, CalendarClock, CircleDollarSign, ClipboardList, TrendingUp } from "lucide-react";
 
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { StatusBadge } from "../components/StatusBadge.jsx";
@@ -35,9 +35,12 @@ export function DashboardPage() {
           </div>
           <div className="update-list">
             {dashboard.recent_updates.map((item) => (
-              <article key={item.project_name} className="update-row">
+              <article key={item.project_name} className={`update-row${item.risk_level === "high" ? " update-row--high-risk" : ""}`}>
                 <div>
                   <strong>{item.project_name}</strong>
+                  {item.risk_level === "high" && (
+                    <span className="high-risk-badge"><AlertTriangle size={12} /> High Risk</span>
+                  )}
                   <p>{item.latest_update}</p>
                 </div>
                 <StatusBadge value={item.phase} />
