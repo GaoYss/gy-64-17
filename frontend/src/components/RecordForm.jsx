@@ -4,7 +4,10 @@ import { Plus } from "lucide-react";
 function initialValue(field) {
   if (field.initial != null) return field.initial;
   if (field.type === "number") return 0;
-  if (field.type === "select") return field.options[0];
+  if (field.type === "select") {
+    const first = field.options[0];
+    return typeof first === "object" && first !== null ? first.value : first;
+  }
   if (field.type === "date") return new Date().toISOString().slice(0, 10);
   if (field.type === "datetime-local") return new Date().toISOString().slice(0, 16);
   return "";
@@ -56,12 +59,18 @@ export function RecordForm({ title, fields, onSubmit }) {
                 <select
                   value={values[field.name]}
                   onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
+                  required={field.required}
                 >
-                  {field.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
+                  {field.options.map((option) => {
+                    const isObject = typeof option === "object" && option !== null;
+                    const value = isObject ? option.value : option;
+                    const label = isObject ? option.label : option;
+                    return (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
               ) : field.type === "textarea" ? (
                 <textarea

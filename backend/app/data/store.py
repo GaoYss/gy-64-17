@@ -112,7 +112,7 @@ class InMemoryStore:
                 "progress": 46,
                 "start_date": str(today - timedelta(days=24)),
                 "expected_finish": str(today + timedelta(days=36)),
-                "risk_level": "medium",
+                "risk_level": "high",
                 "latest_update": "Bathroom waterproofing needs second inspection.",
             },
             {

@@ -35,6 +35,33 @@ function rebuildRecentUpdates(projects) {
     }));
 }
 
+function rebuildDashboard(prev, projects) {
+  if (!prev) return prev;
+  const activeProjects = projects.filter((p) => p.progress < 100);
+  const avgProgress = Math.round(
+    projects.reduce((sum, p) => sum + p.progress, 0) / (projects.length || 1),
+  );
+
+  const phases = [...new Set(projects.map((p) => p.phase))].sort();
+  const phaseDistribution = phases.map((phase) => ({
+    phase,
+    count: projects.filter((p) => p.phase === phase).length,
+  }));
+
+  return {
+    ...prev,
+    generated_at: new Date().toISOString().slice(0, 19),
+    metrics: prev.metrics.map((m, i) => {
+      if (i === 2) {
+        return { ...m, value: activeProjects.length, trend: `${avgProgress}% avg progress` };
+      }
+      return m;
+    }),
+    phase_distribution: phaseDistribution,
+    recent_updates: rebuildRecentUpdates(projects),
+  };
+}
+
 export function AppProvider({ children }) {
   const [state, setState] = useState({
     dashboard: null,
@@ -77,9 +104,7 @@ export function AppProvider({ children }) {
       return {
         ...current,
         projects: nextModuleList,
-        dashboard: current.dashboard
-          ? { ...current.dashboard, recent_updates: rebuildRecentUpdates(nextModuleList) }
-          : current.dashboard,
+        dashboard: rebuildDashboard(current.dashboard, nextModuleList),
       };
     });
     return created;
@@ -95,9 +120,7 @@ export function AppProvider({ children }) {
       return {
         ...current,
         projects: nextModuleList,
-        dashboard: current.dashboard
-          ? { ...current.dashboard, recent_updates: rebuildRecentUpdates(nextModuleList) }
-          : current.dashboard,
+        dashboard: rebuildDashboard(current.dashboard, nextModuleList),
       };
     });
     return updated;
