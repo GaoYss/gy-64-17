@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { DataTable } from "../components/DataTable.jsx";
 import { ProgressBar } from "../components/ProgressBar.jsx";
 import { RecordForm } from "../components/RecordForm.jsx";
@@ -19,36 +21,59 @@ const columns = [
 export function ProjectsPage() {
   const { projects, createRecord, updateRecord } = useAppData();
 
-  const projectOptions = projects.map((p) => ({
-    value: String(p.id),
-    label: `${p.id} — ${p.project_name}`,
-  }));
+  const projectOptions = [
+    { value: "", label: "— Select a project —" },
+    ...projects.map((p) => ({
+      value: String(p.id),
+      label: `${p.id} — ${p.project_name}`,
+    })),
+  ];
 
   const editFields = [
     { name: "project_id", label: "Project", type: "select", options: projectOptions, required: true },
-    { name: "customer_name", label: "Customer", type: "text", initial: "" },
-    { name: "project_name", label: "Project name", type: "text", initial: "" },
-    { name: "manager", label: "Manager", type: "text", initial: "" },
-    { name: "phase", label: "Phase", type: "select", options: ["", "design", "demolition", "plumbing", "waterproofing", "carpentry", "finishing", "completed"] },
-    { name: "progress", label: "Progress", type: "number", initial: "" },
-    { name: "start_date", label: "Start date", type: "text", initial: "" },
-    { name: "expected_finish", label: "Expected finish", type: "text", initial: "" },
-    { name: "risk_level", label: "Risk", type: "select", options: ["", "low", "medium", "high"] },
-    { name: "latest_update", label: "Latest update", type: "text", initial: "" },
+    { name: "customer_name", label: "Customer", type: "text" },
+    { name: "project_name", label: "Project name", type: "text" },
+    { name: "manager", label: "Manager", type: "text" },
+    { name: "phase", label: "Phase", type: "select", options: ["design", "demolition", "plumbing", "waterproofing", "carpentry", "finishing", "completed"] },
+    { name: "progress", label: "Progress", type: "number" },
+    { name: "start_date", label: "Start date", type: "date" },
+    { name: "expected_finish", label: "Expected finish", type: "date" },
+    { name: "risk_level", label: "Risk", type: "select", options: ["low", "medium", "high"] },
+    { name: "latest_update", label: "Latest update", type: "textarea" },
   ];
+
+  const [selectedId, setSelectedId] = useState(null);
+  const selected = projects.find((p) => String(p.id) === String(selectedId)) || null;
+
+  const initialValues = selected
+    ? {
+        project_id: String(selected.id),
+        customer_name: selected.customer_name ?? "",
+        project_name: selected.project_name ?? "",
+        manager: selected.manager ?? "",
+        phase: selected.phase ?? "design",
+        progress: selected.progress ?? 0,
+        start_date: selected.start_date ?? "",
+        expected_finish: selected.expected_finish ?? "",
+        risk_level: selected.risk_level ?? "low",
+        latest_update: selected.latest_update ?? "",
+      }
+    : null;
 
   return (
     <div className="page-stack">
       <div className="form-grid">
         <RecordForm title="Create project" fields={projectFields} onSubmit={(payload) => createRecord("projects", payload)} />
         <RecordForm
-          key={projects.length}
           title="Edit project"
           fields={editFields}
+          initialValues={initialValues}
+          onFieldChange={(name, value) => {
+            if (name === "project_id") setSelectedId(value);
+          }}
           onSubmit={(payload) => {
             const { project_id, ...rest } = payload;
-            const data = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== "" && v != null));
-            return updateRecord("projects", Number(project_id), data);
+            return updateRecord("projects", Number(project_id), rest);
           }}
         />
       </div>

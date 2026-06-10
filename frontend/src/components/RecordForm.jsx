@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 
 function initialValue(field) {
@@ -13,6 +13,16 @@ function initialValue(field) {
   return "";
 }
 
+function buildDefaults(fields, initialValues) {
+  const base = fields.reduce((next, field) => ({ ...next, [field.name]: initialValue(field) }), {});
+  if (initialValues) {
+    Object.keys(initialValues).forEach((key) => {
+      if (initialValues[key] != null) base[key] = initialValues[key];
+    });
+  }
+  return base;
+}
+
 function normalize(fields, values) {
   return fields.reduce((payload, field) => {
     const value = values[field.name];
@@ -25,12 +35,19 @@ function normalize(fields, values) {
   }, {});
 }
 
-export function RecordForm({ title, fields, onSubmit }) {
+export function RecordForm({ title, fields, onSubmit, initialValues, onFieldChange }) {
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [values, setValues] = useState(() =>
-    fields.reduce((next, field) => ({ ...next, [field.name]: initialValue(field) }), {}),
-  );
+  const [values, setValues] = useState(() => buildDefaults(fields, initialValues));
+
+  useEffect(() => {
+    setValues(buildDefaults(fields, initialValues));
+  }, [fields, initialValues]);
+
+  function changeField(name, value) {
+    setValues((prev) => ({ ...prev, [name]: value }));
+    if (onFieldChange) onFieldChange(name, value);
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -38,7 +55,7 @@ export function RecordForm({ title, fields, onSubmit }) {
     try {
       await onSubmit(normalize(fields, values));
       setExpanded(false);
-      setValues(fields.reduce((next, field) => ({ ...next, [field.name]: initialValue(field) }), {}));
+      setValues(buildDefaults(fields, initialValues));
     } finally {
       setSaving(false);
     }
@@ -58,7 +75,7 @@ export function RecordForm({ title, fields, onSubmit }) {
               {field.type === "select" ? (
                 <select
                   value={values[field.name]}
-                  onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
+                  onChange={(event) => changeField(field.name, event.target.value)}
                   required={field.required}
                 >
                   {field.options.map((option) => {
@@ -75,13 +92,13 @@ export function RecordForm({ title, fields, onSubmit }) {
               ) : field.type === "textarea" ? (
                 <textarea
                   value={values[field.name]}
-                  onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
+                  onChange={(event) => changeField(field.name, event.target.value)}
                 />
               ) : (
                 <input
                   type={field.type}
-                  value={values[field.name]}
-                  onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
+                  value={values[field.name] ?? ""}
+                  onChange={(event) => changeField(field.name, event.target.value)}
                   required={field.required}
                 />
               )}
